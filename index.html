@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Park Status</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4; /* Light background for contrast */
+            color: #333; /* Dark text for readability */
+        }
+        header {
+            background-color: #1170ed; /* Header background */
+            color: #ffffff; /* White text in header */
+            padding: 20px;
+            text-align: center;
+            border-radius: 8px; /* Rounded corners */
+        }
+        .park {
+            margin: 10px 0;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 8px; /* Rounded corners for parks */
+            background-color: #ffffff; /* White background for parks */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Soft shadow for depth */
+            opacity: 0; /* Start hidden for fade-in effect */
+            animation: fadeIn 0.5s forwards; /* Apply fade-in animation */
+        }
+        @keyframes fadeIn {
+            to {
+                opacity: 1; /* End fully visible */
+            }
+        }
+        .status {
+            font-weight: bold;
+        }
+        #searchContainer {
+            margin: 20px auto; /* Centering the search container */
+            display: flex; /* Flexbox for layout */
+            justify-content: center; /* Center items horizontally */
+            align-items: center; /* Center items vertically */
+        }
+        #parkName {
+            padding: 10px; /* Adding padding for better appearance */
+            width: 300px; /* Fixed width for the input */
+            border: 2px solid #11ed4b; /* Green border */
+            border-radius: 8px; /* Rounded corners */
+            font-size: 16px; /* Larger font size */
+            margin-right: 10px; /* Spacing between input and button */
+            transition: border-color 0.3s; /* Smooth transition for border color */
+        }
+        #parkName:focus {
+            border-color: #ed117f; /* Change border color on focus */
+            outline: none; /* Remove default outline */
+        }
+        #searchButton {
+            padding: 10px 20px; /* Increasing button size */
+            font-size: 16px; /* Making the font larger */
+            cursor: pointer; /* Pointer cursor for better UX */
+            background-color: #ed117f; /* Pink background */
+            color: #ffffff; /* White text */
+            border: none; /* No border */
+            border-radius: 8px; /* Rounded corners */
+            transition: background-color 0.3s, transform 0.3s; /* Smooth transitions for hover effect */
+        }
+        #searchButton:hover {
+            background-color: #11ed4b; /* Change to green on hover */
+            transform: scale(1.05); /* Slightly scale up on hover */
+        }
+        #statusDisplay {
+            margin-top: 20px; /* Spacing above status display */
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Park Status Checker</h1>
+    </header>
+    <div id="searchContainer">
+        <input type="text" id="parkName" placeholder="Enter park name..." oninput="checkParkStatus()">
+        <button id="searchButton" onclick="pasteText()">Paste & Check Status</button>
+    </div>
+
+    <div id="statusDisplay"></div>
+
+    <script>
+        const parkStatuses = {
+            '4 Guys RV Park at the Gorge' : "11/15 but do leave most of the wifi system online " , 
+ '70 East RV And MH Park' : "no answer " , 
+ 'Acres of Wildlife' : "most of the park will be closed until april 2023 " , 
+ 'Advanced Jetstream RV Resort' : "open year-round " , 
+ 'Agave Village - Roots MGT' : "open year-round " , 
+ 'Ahoy RV' : "open year-round " , 
+ 'Alice Springs' : "10/31 but they leave most of the wifi system online " , 
+ 'Allendale KOA' : "10/31 until 4/15 " , 
+ 'Aloha MHP - LTE' : "open year-round " , 
+ 'Amana Colonies Festival Halle' : "no answer " , 
+ 'America\'s Best Storage' : "open year-round " , 
+ 'Americamp Lake Galston' : "open year-round " , 
+ 'Ancient Oaks RV Park' : "open year-round " , 
+ 'Apple Creek Campground' : "no answer " , 
+ 'Arrowhead RV Campground - ELS' : "10/15 until 4/15 " , 
+ 'Atlanta South RV Resort' : "open year-round " , 
+ 'Atlantic Blueberry - Athena' : "11/3 until 4/4 " , 
+ 'Au Gres Riverfront Campground' : "11/1 until 4/1 " , 
+ 'Augusta Jellystone Park / Beaver Brooke Campground' : "10/20 until 5/16 " , 
+ 'Augusta West Kampground' : "10/15 until 5/15 " , 
+ 'Autauga Creek RV Campground' : "open year-round " , 
+ 'Aztec Village RV Park - GL' : "open year-round " , 
+ 'Babbling Brook RV Park' : "no answer " , 
+ 'Baileyton KOA' : "open year-round " , 
+ 'Bay Palms RV - PHIL' : "open year-round " , 
+ 'Beachfront RV Park' : "open year-round " , 
+ 'Beachfront RV West Bogue Pier' : "open year-round " , 
+ 'Bear Cave RV Resort - ELS' : "10/15 until 4/15 " , 
+ 'Bear Run Campground' : "open year-round for seasonal guests " , 
+ 'Beaver Meadow Campground' : "10/20 until 4/15 " , 
+ 'Bedrock RV Park' : "open year-round " , 
+ 'Big Cypress RV Resort' : "open year-round " , 
+ 'Big Oak RV Park' : "open year-round " , 
+ 'Big Oaks RV Park' : "open year-round " , 
+ 'Big Timber Greycliff KOA' : "10/1 until 5/1 " , 
+ 'Birches Lake RV Resort' : "10/14 until 4/10 " , 
+ 'Bistineau Lake RV' : "open year-round " , 
+ 'Black Bear Campground' : "9/30 until 5/1 " , 
+ 'Black Canyon RV Resort' : "open year-round " , 
+ 'Blackhawk Camping Resort - ELS - LTE' : "10/15 until 4/15 " , 
+ 'Blackhawk Valley Campground' : "no answer " , 
+ 'Brandywine Creek Campground' : "open year-round " , 
+ 'Breeze Lake RV Campground' : "open year-round " , 
+ 'Breezy Oaks RV Park' : "open year-round " , 
+ 'Brighton RV Resort' : "open year-round " , 
+ 'Broken Banjo Holiday / Manchester KOA Holiday - AOS' : "open year-round " , 
+ 'Bryn Mawr Ocean Resort' : "open year-round " , 
+ 'Buckeye Lake Columbus East KOA' : "open year-round " , 
+ 'Buena Vista Campground' : "open year-round " , 
+ 'Buffalo House' : "open year-round " , 
+ 'Cajun Palms RV Resort / Camp Margaritaville' : "open year-round " , 
+ 'Californian RV Resort' : "open year-round " , 
+ 'Camp Cadillac - Roadville' : "open year-round " , 
+ 'Camp Central North' : "open year-round " , 
+ 'Camp Central South' : "open year-round " , 
+ 'Camp HiYo / Homerville KOA - Roadville' : "no answer " , 
+ 'Camp Kernville' : "open year-round " , 
+ 'Camp Mi Casa on the Route RV Park' : "open year-round " , 
+ 'Camp on the Range / USI RV Park - AOS' : "open year-round " , 
+ 'Camp Venice' : "open year-round " , 
+ 'Campers Paradise - TX' : "open year-round " , 
+ 'Campers Paradise Campground' : "no answer " , 
+ 'Camping on the Battenkill' : "10/14 until 5/1 " , 
+ 'Campit Outdoor Resort' : "open year-round " , 
+ 'Canoe Outpost RV' : "open year-round " , 
+ 'Carolina Landing - ELS' : "number busy " , 
+ 'Castle Marina' : "open year-round " , 
+ 'Catskill RV Resort' : "no answer " , 
+ 'Central Management - Vernor Hwy Detroit G&L' : "open year-round " , 
+ 'CeraLand Park and Campground' : "open year-round " , 
+ 'Cherry Mountain Resort / Twin Mountain KOA' : "no answer " , 
+ 'Chief Aripeka Travel Park' : "open year-round " , 
+ 'Citrus Hills RV Park' : "open year-round " , 
+ 'Clarksville RV Park' : "open year-round " , 
+ 'Clearwater Campground' : "10/15 until 4/15 " , 
+ 'Clemson RV' : "open year-round " , 
+ 'Clewells Landing Camp' : "no answer " , 
+ 'Cobble Hill RV Campground / Carolina Rose Campground' : "open year-round " , 
+ 'Cochise Terrace RV' : "open year-round " , 
+ 'Cocopah Bend RV & Golf Resort' : "open year-round " , 
+ 'Colinas South MHP - LTE' : "open year-round " , 
+ 'Cooper Lake RV Community' : "open year-round " , 
+ 'Cottonwood Creek' : "open year-round " , 
+ 'Country Hills RV Park' : "open year-round " , 
+ 'Countryside Campgrounds' : "no answer " , 
+ 'Countryside RV Park' : "open year-round " , 
+ 'Cowboy RV Park' : "no answer " , 
+ 'Cranberry Acres Jellystone Park' : "11/3 until 4/18 " , 
+ 'Crosswinds Marina' : "they close 10/31 but leave the wifi system on " , 
+ 'Crystal Isles - ELS' : "open year-round " , 
+ 'Cullman Campground' : "POSSIBLE CANCELED PARK " , 
+ 'Cultus Lake RV Resort - ELS' : "no answer " , 
+ 'Cunningham Cove' : "open year-round " , 
+ 'Cypress Campground and RV Park - Athena' : "open year-round " , 
+ 'Deep Creek Campground' : "open year-round " , 
+ 'Deer Meadow Campground' : "10/6 until 4/15 " , 
+ 'Deer Run RV Resort - WiFi' : "open year-round " , 
+ 'Delloma RV Park and Campground' : "open year-round " , 
+ 'Der Ruhe Blatz Motel' : "no answer " , 
+ 'Desert Rose RV Park' : "open year-round " , 
+ 'Desert Sands RV Park' : "open year-round " , 
+ 'Desert Trails RV' : "open year-round " , 
+ 'Desert Willow RV' : "open year-round " , 
+ 'Diamond Lake Resort' : "no answer " , 
+ 'Diamond Lure Campground & RV Resort' : "open year-round " , 
+ 'Dillon\'s Creek Marina' : "no answer " , 
+ 'Double Dice RV' : "open year-round " , 
+ 'Dreamland Parks - WiFi and LTE' : "open year-round " , 
+ 'Driftwood Campground' : "open year-round " , 
+ 'Drummer Boy Camping Resort - ELS' : "no answer " , 
+ 'Duck Creek' : "open year-round " , 
+ 'Dune Town Camp Resort / Silver Lake Jellystone Park' : "10/1 until 5/1 " , 
+ 'East Tawas City Park' : "no answer " , 
+ 'Egg Harbor Campground' : "open year-round " , 
+ 'Elkhorn Creek RV Park' : "open year-round " , 
+ 'Emerald Desert RV Resort' : "open year-round " , 
+ 'Encore Pilot Knob RV Resort - ELS' : "open year-round " , 
+ 'Encore Riverside - ELS - Fastwave' : "open year-round " , 
+ 'Everflowing Waters Campground' : "open year-round " , 
+ 'Fair Point Marina - AOS' : "open year-round " , 
+ 'Fairfield Business Center' : "open year-round " , 
+ 'Fields Lakefront Campground' : "no answer " , 
+ 'Finn Road Park Campground' : "10/31 until 5/1 " , 
+ 'Firetower RV Park' : "open year-round " , 
+ 'Flag City RV Resort' : "open year-round " , 
+ 'Flagstaff RV Park/Greers Pine Shadows' : "open year-round " , 
+ 'Flatonia RV Ranch - AOS' : "open year-round " , 
+ 'Fleetwood RV Park' : "open year-round " , 
+ 'Fogg Brook Resort' : "no answer " , 
+ 'Forbes Landing RV Park' : "open year-round " , 
+ 'Forest Lake RV - ELS' : "open year-round " , 
+ 'Forest Lake Village - ELS' : "open year-round " , 
+ 'Forest Retreat RV' : "open year-round " , 
+ 'Fort Beale RV Park' : "open year-round " , 
+ 'Fort Wilderness' : "no answer " , 
+ 'Four Paws Kingdom Campground' : "hurricane damage did not call " , 
+ 'Fredericksburg RV Park' : "open year-round " , 
+ 'Friendship Acres Campground' : "open year-round " , 
+ 'Friendship Village Campground and RV Park' : "open year-round " , 
+ 'Frostproof Mobile Village - Athena' : "open year-round " , 
+ 'Futters 4 Oaks RV Park' : "open year-round " , 
+ 'Fuzzy\'s Restaurant' : "open year-round " , 
+ 'Garden Grove' : "open year-round " , 
+ 'Garden Oasis Adult RV Park' : "open year-round " , 
+ 'Gary\'s Auto Sales' : "open year-round " , 
+ 'Giant Redwoods RV Park' : "open year-round " , 
+ 'Glen Ellis - Yogi Bear' : "10/31 until 5/1 but they leave the wifi on all year " , 
+ 'Goddard Park Vacationland Campground' : "open year-round " , 
+ 'Goff Lake Campground' : "11/3 until 4/15 " , 
+ 'Granite Ridge' : "open year-round " , 
+ 'Great River Harbor Campground' : "10/23 until 4/10 " , 
+ 'Green Acres Mobile Home & RV Park' : "open year-round " , 
+ 'Greenwood Acres Family Campground' : "10/31 until 4/1 " , 
+ 'GTL RV/Spencer RV Park' : "open year-round " , 
+ 'Gulf Coast RV Resort' : "open year-round " , 
+ 'Gulf Waters RV Resort - LTE' : "open year-round " , 
+ 'Hagerstown/Anietam Battlefield KOA' : "no answer " , 
+ 'Harbor Lights MHC - Roots MGT' : "open year-round " , 
+ 'Hardy\'s Landing RV Park' : "open year-round " , 
+ 'Hardy\'s Resort RV Park' : "open year-round " , 
+ 'Harvest Moon RV Park' : "open year-round " , 
+ 'Hat Creek RV Park' : "open year-round " , 
+ 'Hatteras Sands Campground' : "open year-round " , 
+ 'Hayward KOA Holiday' : "10/7 until 4/15 " , 
+ 'Hershey RV & Camping Resort - ELS' : "10/27 until (2nd Friday of april) " , 
+ 'Hickory Lake Estates - Athena' : "open year-round " , 
+ 'Hidden Acres' : "10/13 until (2nd weekend april) " , 
+ 'Hidden Cove RV Resort - ELS' : "open year-round " , 
+ 'Hidden Creek RV Park' : "no answer " , 
+ 'HideAway Campground and Resort' : "unknown until 4/30 " , 
+ 'Hideaway RV Park' : "10/31 until 4/1 " , 
+ 'Hideaway RV Park Quinlan' : "open year-round " , 
+ 'High Springs Campground' : "open year-round " , 
+ 'Holiday Acres' : "no answer " , 
+ 'Holiday Campground on Ochlocknee Bay' : "open year-round " , 
+ 'Holiday Hill Campground' : "no answer " , 
+ 'Holiday Palms RV Resort' : "open year-round " , 
+ 'Holiday Park Campground' : "10/19 until 5/1 " , 
+ 'Holiday Park Campground - MD' : "open year-round " , 
+ 'Holiday RV Campground' : "10/31 until 4/15 " , 
+ 'Holiday Trav-L Park - ELS' : "12/1 until 3/1 (They keep the wifi on the enitre year) " , 
+ 'Holiday Travel Park - ELS' : "open year-round " , 
+ 'Holiday Village - Ormond Beach (TV Only)' : "open year-round " , 
+ 'Holly Acres' : "10/31 until 4/15 " , 
+ 'Hollywood MHC' : "open year-round " , 
+ 'Homestead by the River' : "10/14 until unknown " , 
+ 'Homestead RV Park' : "open year-round " , 
+ 'Houston East RV Park' : "open year-round " , 
+ 'Houston Leisure RV' : "open year-round " , 
+ 'HTR Acadia / Somes Sound View Campground' : "no answer " , 
+ 'HTR Adirondacks / Singing Waters Campground' : "open year-round " , 
+ 'HTR Black Hills / American Buffalo' : "10/1 until 5/1 (they leave the wifi system on) " , 
+ 'HTR Branches of Niagara' : "10/26 until 4/11 " , 
+ 'HTR Durango / Lightner Creek' : "10/31 until (no date yet) " , 
+ 'HTR Moab / ACT Campground' : "open year-round " , 
+ 'HTR TX Hill County / By The River Campground' : "open year-round " , 
+ 'Hucklberry Acres' : "no answer " , 
+ 'Huron River Valley Resort' : "10/11 until 5/1 " , 
+ 'I-10 Kamp Ground' : "open year-round " , 
+ 'Indian Creek Campground' : "10/20 until 4/10 " , 
+ 'Indian Lakes RV Campground - ELS' : "no answer " , 
+ 'Indian Shores Camping & Cottages' : "10/15 until 5/1 (they leave the wifi system on) " , 
+ 'International RV' : "open year-round " , 
+ 'Jackson Lake RV Park' : "no answer " , 
+ 'Jellystone of Estes Park - HTR' : "10/27 until 3/14 " , 
+ 'Jensen\'s RV Park and Motel' : "no answer " , 
+ 'Jetstream RV Resort at Wharton' : "open year-round " , 
+ 'Junction West - Big Chief-Ponca City - AOS' : "open year-round " , 
+ 'Junction West - Coffeyville - AOS' : "open year-round " , 
+ 'Junction West - Durango Riverside Campground - AOS' : "11/1 until 5/1 " , 
+ 'Junction West - Grand Junction, CO - AOS' : "11/1 until 5/2 " , 
+ 'Junction West - Vallecito RV Park - AOS' : "11/1 until 5/3 " , 
+ 'Junius Ponds' : "10/15 until 5/1 " , 
+ 'Kakusha MHC - Roots MGT' : "open year-round " , 
+ 'Kalkaska RV Park' : "11/17 until 4/20 " , 
+ 'Katy Lake RV' : "open year-round " , 
+ 'Keen Lake Camping and Resort' : "10/14 until 5/2 " , 
+ 'Keena Marina' : "no answer " , 
+ 'Keepsake Storage' : "open year-round " , 
+ 'Kellys RV Park' : "open year-round " , 
+ 'Kenisee Lake RV Campground - ELS' : "no answer " , 
+ 'Kenorus Campground and RV Resort' : "10/14 until 5/1 " , 
+ 'Kentuckiana Kampground' : "10/27 until 5/1 " , 
+ 'King Nummy - ELS' : "10/26 until 4/1 " , 
+ 'Kissimmee RV Park - Athena' : "open year-round " , 
+ 'Klamath Ranch Resort - Blue Heron RV' : "open year-round " , 
+ 'Knots Landing' : "open year-round " , 
+ 'La Costa Mobile and RV Park' : "open year-round " , 
+ 'Lake Como Family Nudist Resort' : "open year-round " , 
+ 'Lake George Camping Village - Athena' : "no answer " , 
+ 'Lake Ivanhoe Campground' : "no answer " , 
+ 'Lake James Landing' : "hurricane damage did not call " , 
+ 'Lake Milton KOA' : "10/15 until " , 
+ 'Lake Myers RV & Camping Resort - ELS' : "open year-round " , 
+ 'Lake Of Dreams' : "10/15 until 4/15 (they leave the wifi system on) " , 
+ 'Lake Sch-Nepp-A-Ho Family Campground' : "no answer " , 
+ 'Lake Whitney RV Campground - ELS' : "open year-round " , 
+ 'Lakeport RV Resort' : "Listed as bililng issues park offline for a while " , 
+ 'LakeShore RV Resort' : "open year-round " , 
+ 'Lakeside Resort Campground' : "11/1 until 4/1 " , 
+ 'Lakesun Lodge & RV Resort' : "open year-round " , 
+ 'Lakeview RV Resort - Roadville' : "no answer " , 
+ 'Lakewood RV' : "hurricane damage did not call " , 
+ 'Lakewood Village MHC - Roots MGT' : "open year-round " , 
+ 'Larssons Crooked Creek Resort' : "10/7 until 4/1 " , 
+ 'Lassen RV Park' : "open year-round " , 
+ 'Lazy Days Campground' : "no answer " , 
+ 'Lazy-K Campground' : "no answer " , 
+ 'Leafy Oaks Campground' : "hosted but monitoring inactive " , 
+ 'Ledgeview RV Park' : "10/15 until 5/9 " , 
+ 'Leisure World RV Park - ELS' : "open year-round " , 
+ 'Lemon Cove Village RV Park' : "open year-round " , 
+ 'Liars Cove Resort' : "12/1 until open 4 weekend of april (leaves the wifi on) " , 
+ 'Lighthouse Beach RV Resort' : "11/15 until 4/1 (leaves the wifi system on) " , 
+ 'Linwood Marina' : "open year-round " , 
+ 'Little Willies Campground' : "open year-round " , 
+ 'Littlefield Beaches' : "no answer (says closed on the voicemail for the season) " , 
+ 'Logan Landing RV & Cabin Resort' : "no answer " , 
+ 'Loon\'s Haven Family Campground' : "no answer " , 
+ 'Lost Acres Camping Resort - Roadville' : "open year-round " , 
+ 'Loveland RV Resort' : "no answer " , 
+ 'Mackinaw Mill Creek Camping' : "10/21 until 5/1 " , 
+ 'Maple Bear Campground' : "open year-round " , 
+ 'Maple Lakes Recreational Park' : "10/15 until 4/15 " , 
+ 'Maple River Campground' : "no answer " , 
+ 'Marina Dunes RV Park - ELS' : "open year-round " , 
+ 'Marthas Vineyards Campground' : "10/1 until 5/20 (leaves the wifi system on) " , 
+ 'Mayfair Campground' : "10/14 until 4/25 " , 
+ 'Meadow Lake Park' : "10/31 until 5/1 " , 
+ 'Meadowlark Mobile Home & RV Park' : "open year-round " , 
+ 'Mears State Park' : "10/31 until 5/1 " , 
+ 'Meinke Marina' : "11/15 until 4/1 " , 
+ 'Merry Meadows Campground' : "open year-round " , 
+ 'Mexico Beach Resort' : "open year-round " , 
+ 'Miller Creek RV Park - PHIL' : "open year-round " , 
+ 'Miller Marina' : "open year-round " , 
+ 'Morningside RV Estates - Athena' : "open year-round " , 
+ 'Mountain Stream RV Park' : "hurricane damage did not call / pending cancel " , 
+ 'Mountain View RV' : "open year-round " , 
+ 'Mountain View RV Park' : "no answer " , 
+ 'Mountain View Village - LTE' : "open year-round " , 
+ 'Nashville E Lebanon KOA' : "no answer " , 
+ 'Natchez Trace RV Park - ELS' : "no answer " , 
+ 'New Orleans RV Resort/Pontchartrain Landing-Athena' : "open year-round " , 
+ 'Niagara Woodland Campground' : "10/20 until 5/9 " , 
+ 'North Shore Marina' : "10/26 until march not sure of the day(they leave the wifi system on) " , 
+ 'Northampton Springfield KOA' : "10/31 until 4/15 " , 
+ 'Northpointe Development - Precision Landscaping' : "open year-round " , 
+ 'Northpointe Shores Campground' : "10/15 until 4/1 (they leave the wifi system on) " , 
+ 'Oak Knoll Campground' : "9/28 until 5/1 " , 
+ 'Oak Springs MHC - Roots MGT' : "open year-round " , 
+ 'Oasis RV Resort' : "open year-round " , 
+ 'Ocala Forest Campground' : "open year-round " , 
+ 'Okatoma Resort & RV Park' : "open year-round " , 
+ 'Okeechobee KOA RV Resort - ELS' : "open year-round " , 
+ 'Old Orchard Beach Campground' : "no answer " , 
+ 'Orion Oaks RV Park' : "no answer " , 
+ 'Outwest RV Park' : "open year-round " , 
+ 'Ozark Outdoors Resort' : "no answer " , 
+ 'Palm Haven MHC' : "open year-round " , 
+ 'Palo Duro RV Park' : "open year-round " , 
+ 'Papoose Pond Resort' : "PARK HAS BEEN OFFLINE DID NOT CALL " , 
+ 'Paradise Valley RV Park' : "open year-round " , 
+ 'Parkers Landing RV Park' : "open year-round " , 
+ 'Parkview Riverside RV Park' : "open year-round " , 
+ 'Partridge Hollow Campground' : "open year-round " , 
+ 'Peaceful Woodland Campground' : "10/27 until 4/18 " , 
+ 'Pentwater' : "open year-round " , 
+ 'Pete\'s Pier Marina' : "open year-round " , 
+ 'Pettecote Junction Campground' : "10/27 until 4/4 " , 
+ 'Pine Acres Family Camping Resort' : "11/1 until 4/15 " , 
+ 'Pine Flat Lake Marina - LTE' : "open year-round " , 
+ 'Pine Haven Campground' : "10/15 until 5/15 " , 
+ 'Pioneer Park' : "no answer " , 
+ 'Pirolli Park' : "10/15 until 4/15 " , 
+ 'Pleasant Hill Campground' : "no answer " , 
+ 'Pony Express RV' : "open year-round " , 
+ 'Port Royal Montauk' : "open year-round " , 
+ 'Port Sanilac Marina' : "12/1 until 2/1 " , 
+ 'Port St. Lucie' : "open year-round " , 
+ 'PSL Village' : "open year-round " , 
+ 'Quail Creek Resort' : "open year-round " , 
+ 'Ramada Inn' : "open year-round " , 
+ 'Rancho Los Coches RV Park' : "open year-round " , 
+ 'Rancho OSO - ELS' : "open year-round " , 
+ 'Reagan Ridge RV Park' : "open year-round " , 
+ 'Ridge Rider Campground / Little Orleans - Roadville' : "no answer " , 
+ 'River Dance RV Resort' : "no answer " , 
+ 'River Front RV Park' : "open year-round " , 
+ 'River Run RV' : "no answer " , 
+ 'River View Campground' : "10/15 until 5/1 " , 
+ 'Riverbend RV Park' : "no answer " , 
+ 'Rivers Edge RV Park' : "open year-round " , 
+ 'Rivers Rest Marina and Resort' : "open year-round " , 
+ 'Rochester Marion KOA Journey' : "10/31 until 3/15 (they leave the system online) " , 
+ 'Rockport KOA Holiday / Coastal Breeze' : "open year-round " , 
+ 'Rose Grove MHP' : "camera's only " , 
+ 'Round Top Campground - ELS' : "11/31 until 4/1 " , 
+ 'Roundup Lake Campground' : "10/31 until 4/15 " , 
+ 'Royal Mountain Campground' : "no answer " , 
+ 'Rustic Gardens / Home on the Range RV Park' : "open year-round " , 
+ 'Saginaw Bay Yacht Club' : "open year-round " , 
+ 'Sandusky KOA Holiday Campground' : "no answer " , 
+ 'Sandy Oaks RV' : "open year-round " , 
+ 'Saratoga RV Park - Athena' : "open year-round " , 
+ 'Sebago\'s Crooked River' : "10/15 until 5/1 " , 
+ 'Sebasticook Lake Campground' : "10/14 until 5/9 (leave's it online for the camera's) " , 
+ 'Sengs Marina' : "no answer " , 
+ 'Sentinel Peak RV Park' : "open year-round " , 
+ 'Settled Roots RV Park' : "open year-round " , 
+ 'Shadow Lake RV Park' : "open year-round " , 
+ 'Shady Shores RV Resort - AOS' : "no answer " , 
+ 'Shipshewana Campground North Park' : "10/31 until 4/7 " , 
+ 'Shipshewana Campground South Park' : "11/1 until 3/15 " , 
+ 'Shore Hills Campground & RV Park' : "10/15 until 5/14 " , 
+ 'Shreveport KOA' : "open year-round " , 
+ 'Siesta Cove Marina' : "no answer " , 
+ 'Silver Canoe Campground' : "open year-round " , 
+ 'Silver Springs RV Park - Athena' : "open year-round " , 
+ 'Silver View RV Resort' : "open year-round " , 
+ 'Smith Grove Campground' : "open year-round " , 
+ 'Snug Harbor Marina' : "no answer " , 
+ 'South Forty RV Park - PHIL' : "10/15 until 4/15(leave's the wifi on longer) " , 
+ 'Southern Mesa RV Park' : "open year-round " , 
+ 'Spacious Skies Sandy Run Campground/Lazy Acres' : "open year-round " , 
+ 'St Clair RV Resort - ELS' : "10/15 until 4/15 (leave's the wifi on all year) " , 
+ 'St Hazards Resort' : "10/31 until 4/1 " , 
+ 'Starlight Campground and RV Park' : "11/1 until 5/1 " , 
+ 'Strawhouse Resorts & Organic Coffee' : "open year-round " , 
+ 'Sugar Mill Ruins' : "open year-round " , 
+ 'Summit Hill Campground' : "10/1 until 5/1 (leaves some sites up for the cameras) " , 
+ 'Sun n Fun' : "open year-round " , 
+ 'Sun Outdoors / Compass RV Park' : "open year-round " , 
+ 'Sunburst RV Resort - AOS' : "open year-round " , 
+ 'Sundial RV Park - GL' : "Not sure if it's active anymore " , 
+ 'Sundown Resort' : "11/30 until 4/7 " , 
+ 'Sunseekers - ELS' : "open year-round " , 
+ 'Sunset Marina' : "open year-round " , 
+ 'Sunset Palms RV & Mobile Home Park' : "open year-round " , 
+ 'Sunshine Travel - ELS' : "open year-round " , 
+ 'Super 8 Goshen' : "open year-round " , 
+ 'Super 8 Shipshewana' : "open year-round " , 
+ 'Ta-Ga-Soke Campground' : "10/14 until 4/25 " , 
+ 'Tall Pines Campground' : "camera's only " , 
+ 'Tall Pines Campground - NY' : "no answer " , 
+ 'Tanglewood Outback' : "open year-round " , 
+ 'Tarpon Point Marina' : "camera's only " , 
+ 'Tejas Valley RV Park' : "open year-round " , 
+ 'Texan RV Ranch' : "open year-round " , 
+ 'Texas 281 RV Park' : "open year-round " , 
+ 'The Oaks at Ochlockonee Bay' : "open year-round " , 
+ 'The Pines Campground' : "open year-round " , 
+ 'The Point RV at Lake Hartwell - AOS' : "open year-round " , 
+ 'The Rusty Boot RV / Palms of Paradise RV - SUCCESS' : "open year-round " , 
+ 'The Village at Zephyrhills' : "open year-round " , 
+ 'The Vineyards of Fredericksburg RV Park' : "open year-round " , 
+ 'The White Caps Motel and RV Park' : "10/26 until 3/15 " , 
+ 'Tidewater Campground' : "10/15 until 5/15 (some equipment is online for camera's) " , 
+ 'Timberline Campground - Roadville' : "open year-round " , 
+ 'Tip Tam Camping Resort' : "open year-round " , 
+ 'Tok Village RV Campground' : "9/25 until 4/30 " , 
+ 'Trailer Inns of Yakima' : "no answer " , 
+ 'Tranters Creek Resort' : "no answer " , 
+ 'Tropical Trails RV Resort' : "open year-round " , 
+ 'Turquoise Triangle RV Park' : "open year-round " , 
+ 'Twin Coves Park & Campground' : "open year-round " , 
+ 'Twin Ells - PHIL' : "10/24 until 4/1 " , 
+ 'Twin Lakes - ELS' : "open year-round " , 
+ 'Uniontown KOA at Rivers Edge' : "open year-round " , 
+ 'Vacation Station RV Resort' : "10/31 until 4/15 " , 
+ 'Vacay Villages' : "open year-round " , 
+ 'Valley Overlook' : "no answer " , 
+ 'Valley View RV Park' : "open year-round " , 
+ 'Venetian Marina' : "11/1 until 5/1 " , 
+ 'Victoria Palms' : "open year-round " , 
+ 'Village Pines Mobile Home Park' : "open year-round " , 
+ 'Wagon Wheel RV Park' : "open year-round " , 
+ 'Waiiaka RV Park' : "open year-round " , 
+ 'Waldo\'s Camp' : "open year-round " , 
+ 'Waterfront RV Park' : "open year-round " , 
+ 'Waterlawn Cottages' : "open year-round " , 
+ 'Waubeeka Family Campground' : "no answer " , 
+ 'Wekiva Falls RV Resort - Roots MGT' : "open year-round " , 
+ 'West Haven RV Park' : "no answer " , 
+ 'West Houghton Lake' : "no answer " , 
+ 'West Jupiter RV Park - Roots MGT' : "open year-round " , 
+ 'West Otter Lake Campground' : "no answer " , 
+ 'Western Way RV Resort - Roots MGT' : "open year-round " , 
+ 'Whispering Oaks RV Park' : "open year-round " , 
+ 'White Oak Shores Camping & RV Resort - ELS' : "open year-round " , 
+ 'White\'s Canoe Livery & Campground' : "no answer " , 
+ 'Whites RV Park' : "open year-round " , 
+ 'Wilderness RV Park' : "open year-round " , 
+ 'Wildwood RV Park & Campground' : "10/20 until 5/2 " , 
+ 'Willow Beach Marina and RV Park' : "open year-round " , 
+ 'Winter Quarters Pasco RV Resort - ELS' : "open year-round " , 
+ 'Wooded Acres Family Campground' : "11/20 until 5/1 (keeps some of the wifi on all year) " , 
+ 'Woodland Acres Campground' : "no answer " , 
+ 'Woodland Lakes RV' : "open year-round " , 
+ 'Woodside Lake Park' : "11/1 until 5/1 " , 
+ 'Woodstock Lake Campground' : "10/15 until 5/1 (keep some of the wifi online) " , 
+ 'Woody Mountain Campground' : "open year-round " , 
+ 'Worsham MHP - LTE' : "no answer " , 
+ 'Zachary Taylor Resort' : "open year-round " , 
+ 'Zuber\'s River Camp' : "open year-round " ,
+
+        };
+
+function displayAllParks() {
+    const statusDisplay = document.getElementById('statusDisplay');
+    statusDisplay.innerHTML = '';
+
+    Object.keys(parkStatuses).forEach(park => {
+        statusDisplay.innerHTML += `<div class="park">Status of ${park}: <span class="status">${parkStatuses[park]}</span></div>`;
+    });
+}
+
+function checkParkStatus() {
+    const parkNameInput = document.getElementById('parkName').value.trim();
+    const statusDisplay = document.getElementById('statusDisplay');
+    const parkName = parkNameInput.split(' (')[0]; // Ignore content inside brackets
+
+    // Clear the display first
+    statusDisplay.innerHTML = '';
+
+    // If the input is empty, display all parks
+    if (parkName === '') {
+        displayAllParks();
+        return;
+    }
+
+    // Display all parks that match the search
+    Object.keys(parkStatuses).forEach(park => {
+        if (park.toLowerCase().includes(parkName.toLowerCase())) {
+            statusDisplay.innerHTML += `<div class="park">Status of ${park}: <span class="status">${parkStatuses[park]}</span></div>`;
+        }
+    });
+
+    // If no park matches, show a no status found message
+    if (statusDisplay.innerHTML === '') {
+        statusDisplay.innerHTML = `<div class="park">Hmm.. 🤔 the park named as  "${parkNameInput}" is not showing up, Maybe Try a Different name? or Check the Spelling.</div>`;
+    }
+}
+
+function pasteText() {
+    // Attempt to use navigator.clipboard for pasting text
+    navigator.clipboard.readText()
+        .then(text => {
+            document.getElementById('parkName').value = text; // Paste text into the input
+            checkParkStatus(); // Check status after pasting
+        })
+        .catch(err => {
+            console.error('Failed to read clipboard contents: ', err);
+        });
+}
+
+// Display all parks when the page loads
+displayAllParks();
+</script>
+</body>
+</html>
